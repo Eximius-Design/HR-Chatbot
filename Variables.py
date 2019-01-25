@@ -1,0 +1,11 @@
+label=None
+leave_types = ['sick leave', 'privillage leave', 'maternity leave', 'paternity leave', 'bereavement leave']
+Emp_id = 1029
+Emp_Name = 'Manjunath'
+leave_type = None
+From_date = None
+To_date = None
+Number_of_days = None
+W2V_model=None
+index2word_set=None
+model_LG=None
