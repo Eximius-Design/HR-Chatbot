@@ -1,3 +1,5 @@
+import datetime
+
 
 class Conversations:
     boot_conversations = [
@@ -21,9 +23,22 @@ class Conversations:
         "There is only %s holiday from %s to %s",#d
         "Totally there are %s holidays %s to %s",
     "Sorry I didn't understand this!",
-    "Got it. Have a good day!!!"]
+    "Got it. Have a good day!!!",
+    "How can I help you?"]
 
     labels=["Holiday","Leave","Welcome","GoodBye","FAQ"]
+    Thanks_replays=["It is my pleasure.","I am glad to do that.","You're very welcome.","Don't mention it.",
+                    "No Problem.","Anytime.","Sure."]
+
+    def Hi_Replay(self):
+        currentTime = datetime.datetime.now()
+        if currentTime.hour < 12:
+            return 'Good morning Manju. '+Conversations.boot_conversations[-1]
+        elif 12 <= currentTime.hour < 18:
+            return 'Good Afternoon Manju. ' + Conversations.boot_conversations[-1]
+        else:
+            return 'Good Evening Manju. ' + Conversations.boot_conversations[-1]
+
 #These are used for regular flask app which uses html to display messages
 # boot_conversations = [
 #     "Which type of leave do you want to apply?<br> 1.Sick Leave<br> 2.Privillage Leave<br> 3.Maternity Leave <br> 4.Paternity Leave <br> 5.Bereavement Leave",

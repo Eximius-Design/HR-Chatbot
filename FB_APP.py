@@ -1,9 +1,14 @@
+
 import pandas as pd
 from flask import Flask, request
 from pymessenger import Bot
 import requests
-import Variables,IntentClassification,HolidayConversation,LeaveConversation1,Conversation
-app = Flask("My echo bot")
+import datetime
+import random
+import Variables,IntentClassification,HolidayConversation,LeaveConversation1,Conversation,W2VIntentClassification,FAQConversation
+from LeaveConversation1 import LeaveConversation1
+
+app = Flask("Eximius HR Chatbot")
 
 FB_ACCESS_TOKEN = "EAAD8jL36JM8BANPjrBeOjUeyODZAZAm9G9Tz8dWFEEN0PXn04FC9XscRVbv1VKKpPvi76DcXOZC5XUBvIYtJ7mp19pPHSBuZAV2bnZA3qPzCcS1C4HlJkMFydxpmjSNEHjL2WcTUK22lp6owWumwjnZCbDCx0IClbjMG7ZCQwZBkR9UvJKdYuZBN9"
 bot = Bot(FB_ACCESS_TOKEN)
@@ -20,34 +25,43 @@ def verify():
 	return "Hello world", 200
 
 def response(label,text):
-    print(text)
-    if label=="Holiday":
-        print(1)
-        Variables.label=None
-        return HolidayConversation.HolidayConversation.main(text)
-    elif label=="Leave":
-        print(2)
-        return LeaveConversation1.LeaveConversation1.main(text)
-    else:
-        print(3)
-        #print(3)
-        return 3
+	if label==Conversation.Conversations.labels[0]:
+		print("in ",Conversation.Conversations.labels[0])
+		Variables.label=None
+		return HolidayConversation.HolidayConversation.main(text)
+	elif label==Conversation.Conversations.labels[1]:
+		print("in ", Conversation.Conversations.labels[1])
+		return LeaveConversation1.main(text)
+	elif label==Conversation.Conversations.labels[2]:
+		print("in ", Conversation.Conversations.labels[2])
+		 #print(3)
+		Variables.label = None
+		return Conversation.Conversations.Hi_Replay(1)
+	elif label==Conversation.Conversations.labels[3]:
+		print("in ", Conversation.Conversations.labels[3])
+		Variables.label = None
+		return random.choice(Conversation.Conversations.Thanks_replays)
+	elif label==Conversation.Conversations.labels[4]:
+		print("in ", Conversation.Conversations.labels[4])
+		Variables.label = None
+		return FAQConversation.FAQConversation.final(text)
+		 #return "FAQ"
+	else:
+		Variables.label = None
+		return "No intents Matched"
 
 def get_bot_response(userText):
 	if userText=="cancel":
-	   return Conversation.Conversations.boot_conversations[20]
+		LeaveConversation1.flush(1)
+		return Conversation.Conversations.boot_conversations[20]
 	elif Variables.label==None:
-	   Variables.label=IntentClassification.intent_classification.final(userText)
-	   print("here")
-		#Variables.label = W2VIntentClassification.W2VIntentClassification.final(userText)
-
+		#Variables.label=IntentClassification.intent_classification.final(userText)
+		print("here")
+		Variables.label = W2VIntentClassification.W2VIntentClassification.final(userText)
 	r=response(Variables.label,userText)
 	if isinstance(r,pd.DataFrame):
-		#print(r.to_html())
 		#return Conversation.Conversations.boot_conversations[12]+"\n"+r.to_html()
 		return Conversation.Conversations.boot_conversations[12]+"\n\n"+r.to_string()
-
-		#return s
 	else:
 		return str(r)
 
@@ -72,36 +86,28 @@ def webhook():
 
 	return "ok", 200
 
-# @app.route('/', methods=['POST'])
-# def webhook():
-# 	print("in web hook")
-# 	#print(request.data)
-# 	data = request.get_json()
-# 	#flush()
-# 	if data['object'] == "page":
-# 		entries = data['entry']
-# 		print(data)
-# 		for entry in entries:
-# 			messaging = entry['messaging']
-#
-# 			for messaging_event in messaging:
-#
-# 				sender_id = messaging_event['sender']['id']
-# 				recipient_id = messaging_event['recipient']['id']
-#
-# 				if messaging_event.get('message'):
-# 					# HANDLE NORMAL MESSAGES HERE
-# 					if messaging_event['message'].get('text'):
-# 						# HANDLE TEXT MESSAGES
-# 						query = messaging_event['message']['text']
-# 						#query="i want leave"
-# 						# ECHO THE RECEIVED MESSAGE
-# 						# reply=get_bot_response(query)
-# 						print("query:",query)
-# 						#print("reply:",reply)
-# 						# bot.send_text_message(sender_id, reply)
-# 						bot.send_text_message(sender_id, "hi_")
-# 	return "ok", 200
+
+@app.before_first_request
+def before_first_request():
+	print('########### Restarted,')
+	if Variables.W2V_model == None:
+		print("started loading")
+		Variables.model_LG = W2VIntentClassification.W2VIntentClassification.load_w2vmodel(1)
+		print("W2v loading finished555555555555")
+	else:
+		print("Word2Vec model already loaded")
+
+# @app.before_request
+# def before_request():
+# 	print('########### Restarted,')
+# 	# if Variables.W2V_model == None:
+# 	# 	print("started loading")
+# 	# 	Variables.model_LG = W2VIntentClassification.W2VIntentClassification.load_w2vmodel(1)
+# 	# 	print("W2v loading finished555555555555")
+# 	# else:
+# 	# 	print("Word2Vec model already loaded")
+
 
 if __name__ == "__main__":
-	app.run(port=8000, use_reloader = True)
+	print("in main of FBapp")
+	app.run(port=8000,debug=True, use_reloader=True)

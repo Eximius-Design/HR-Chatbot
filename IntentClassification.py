@@ -5,6 +5,7 @@ from sklearn import metrics
 from sklearn.model_selection import train_test_split,GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.ensemble import RandomForestClassifier
 
 class intent_classification:
     def load_csv(file_name):
@@ -39,6 +40,7 @@ class intent_classification:
         optimizer.fit(X_train_tvf,y_train)
         predict=optimizer.best_estimator_.predict(X_test_tvf)
         return metrics.accuracy_score(y_test,predict),optimizer
+
     def XG_Boost(X_train_tvf ,X_test_tvf,y_train,y_test):
         model = xgb.XGBClassifier(max_depth=7, n_estimators=200, colsample_bytree=0.8,
                                   subsample=0.8, nthread=10, learning_rate=0.1)
@@ -47,20 +49,18 @@ class intent_classification:
         accuracy=metrics.accuracy_score(y_test, predictions)
         return accuracy,model
 
-    def XG_Boost2(X_train_tvf, X_test_tvf, y_train, y_test):
-        model = xgb.XGBClassifier(max_depth=7, n_estimators=200, colsample_bytree=0.8,
-                                  subsample=0.8, nthread=10, learning_rate=0.1)
-        model.fit(X_train_tvf.tocsc(), y_train)
-        predictions = model.predict(X_test_tvf.tocsc())
+    def Random_Forest(X_train_tvf, X_test_tvf, y_train, y_test):
+        model = RandomForestClassifier(n_estimators=10000, max_depth=100)
+        model.fit(X_train_tvf, y_train)
+        predictions = model.predict(X_test_tvf)
         accuracy = metrics.accuracy_score(y_test, predictions)
         return accuracy, model
 
     def load_model(self):
-        data = intent_classification.load_csv('/home/manjunathh/chatbot/UserQueries.csv')
+        data = intent_classification.load_csv('/home/manjunathh/chatbot/UserQueries_new.csv')
         X_train, X_test, y_train, y_test = intent_classification.split_data(data)
         X_train_tvf, X_test_tvf, tvfidf_model = intent_classification.convert_text_vector(X_train, X_test)
-        accuracy, model = intent_classification.Logistic_Regression(X_train_tvf, X_test_tvf, y_train, y_test)
-        #accuracy, model = intent_classification.XG_Boost(X_train_tvf, X_test_tvf, y_train, y_test)
+        accuracy, model = intent_classification.Random_Forest(X_train_tvf, X_test_tvf, y_train, y_test)
         print("Accuracy of model is :",accuracy*100)
         return model,tvfidf_model
 

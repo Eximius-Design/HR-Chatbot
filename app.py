@@ -74,4 +74,4 @@ def get_bot_response():
         return str(r)
 
 if __name__ == "__main__":
-    app.run(port=8000, use_reloader = True)
+    app.run(port=5000, use_reloader = True)

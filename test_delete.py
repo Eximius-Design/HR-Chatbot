@@ -1,112 +1,101 @@
-#userText = request.args.get('msg')
-
-
 import pandas as pd
-from flask import Flask, request
-from pymessenger import Bot
-import requests
-import datetime
-import Variables,IntentClassification,HolidayConversation,LeaveConversation1,Conversation,W2VIntentClassification
-app = Flask("My echo bot")
-
-FB_ACCESS_TOKEN = "EAAD8jL36JM8BANPjrBeOjUeyODZAZAm9G9Tz8dWFEEN0PXn04FC9XscRVbv1VKKpPvi76DcXOZC5XUBvIYtJ7mp19pPHSBuZAV2bnZA3qPzCcS1C4HlJkMFydxpmjSNEHjL2WcTUK22lp6owWumwjnZCbDCx0IClbjMG7ZCQwZBkR9UvJKdYuZBN9"
-bot = Bot(FB_ACCESS_TOKEN)
-
-VERIFICATION_TOKEN = "hello"
+import gensim.models.keyedvectors as word2vec
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+import numpy as np
+from sklearn.model_selection import train_test_split
+import Variables
 
 
-@app.route('/', methods=['GET'])
-def verify():
-	if request.args.get("hub.mode") == "subscribe" and request.args.get("hub.challenge"):
-		if not request.args.get("hub.verify_token") == VERIFICATION_TOKEN:
-			return "Verification token mismatch", 403
-		return request.args["hub.challenge"], 200
-	return "Hello world", 200
+class FAQConversation:
+    def read_csv(file_name):
+        data = pd.read_csv(file_name)
+        return data
 
-def response(label,text):
-	if label==Conversation.Conversations.labels[0]:
-		print(1)
-		Variables.label=None
-		return HolidayConversation.HolidayConversation.main(text)
-	elif label==Conversation.Conversations.labels[1]:
-		 print(2)
-		 return LeaveConversation1.LeaveConversation1.main(text)
-	elif label==Conversation.Conversations.labels[2]:
-		print(3)
-		 #print(3)
-		Variables.label = None
-		return "Welcome"
-	elif label==Conversation.Conversations.labels[3]:
-		print(4)
-		Variables.label = None
-		return "GoodBye"
-	elif label==Conversation.Conversations.labels[4]:
-		 print(6)
-		 Variables.label = None
-		 return "FAQ"
-	else:
-		Variables.label = None
-		return "No intents Matched"
+    # Create a model of word2vec using the gensim library
+    def load_word2vec(path):
+        mod = word2vec.KeyedVectors.load_word2vec_format(path, binary=True, )
+        return mod
 
-def get_bot_response(userText):
-	if userText=="cancel":
-	   return Conversation.Conversations.boot_conversations[20]
-	elif Variables.label==None:
-	   Variables.label=IntentClassification.intent_classification.final(userText)
-	   print("here")
-	   #Variables.label = W2VIntentClassification.W2VIntentClassification.final(userText)
-	r=response(Variables.label,userText)
-	if isinstance(r,pd.DataFrame):
-		#print(r.to_html())
-		#return Conversation.Conversations.boot_conversations[12]+"\n"+r.to_html()
-		return Conversation.Conversations.boot_conversations[12]+"\n\n"+r.to_string()
+    # Now we converting the vector of word(Number) to its actual word
+    def convertVector_to_word(model):
+        index2word_set = set(model.wv.index2word)
+        return index2word_set
 
-		#return s
-	else:
-		return str(r)
+    # Now we converting the vector of word(Number) to its actual word
+    def convertVector_to_word(model):
+        index2word_set = set(model.wv.index2word)
+        return index2word_set
 
+    # Remove stop words like "I,this,that,these,and,the etc."
+    def remove_stopwords(words):
+        # nltk.download('stopwords')
+        stop_words = set(stopwords.words('english'))
+        # return " ".join(w for w in words if w not in stop_words)
+        return [w for w in words if w not in stop_words]
 
+    def lowercase(words):
+        # return " ".join(w.lower() for w in words)
+        return [w.lower() for w in words]
 
-@app.route('/', methods=['POST'])
-def webhook():
-	print("in web hook")
-	output = request.get_json()
-	for event in output['entry']:
-		messaging = event['messaging']
-		for message in messaging:
-			if message.get('message'):
-				# Facebook Messenger ID for user so we know where to send response back to
-				recipient_id = message['sender']['id']
-				if message['message'].get('text'):
-					query = message['message']['text']
-					print("query:", query)
-					reply=get_bot_response(query)
-					print(reply)
-					bot.send_text_message(recipient_id, reply)
+    # stemming of word
+    def stem(words):
+        ps = PorterStemmer()
+        # return " ".join(ps.stem(w) for w in words)
+        return [ps.stem(w) for w in words]
 
-	return "ok", 200
-#just modiifed now
-# @app.before_first_request
-# def before_first_request():
-# 	print('########### Restarted,')
-# 	if Variables.W2V_model == None:
-# 		print("started loading")
-# 		Variables.model_LG = W2VIntentClassification.W2VIntentClassification.load_w2vmodel(1)
-# 		print("W2v loading finished555555555555")
-# 	else:
-# 		print("Word2Vec model already loaded")
+    def clean_text(sentence):
+        words = str(sentence).split()
+        lower_case_words = FAQConversation.lowercase(words)
+        stop_words_removed = FAQConversation.remove_stopwords(lower_case_words)
+        # stemmed_words=app.stem(stop_words_removed)
+        return stop_words_removed
 
-# @app.before_request
-# def before_request():
-# 	print('########### Restarted,')
-# 	# if Variables.W2V_model == None:
-# 	# 	print("started loading")
-# 	# 	Variables.model_LG = W2VIntentClassification.W2VIntentClassification.load_w2vmodel(1)
-# 	# 	print("W2v loading finished555555555555")
-# 	# else:
-# 	# 	print("Word2Vec model already loaded")
+    # here we will define the calculation of average word2vec for a sentence
+    def average_word2vec_sentence(sentences):
+        l1 = []
+        for sent in sentences:
+            cleaned_words = FAQConversation.clean_text(sent)
+            feature_vector = np.zeros((300,), dtype='float32')
+            n_words = 0
+            for word in cleaned_words:
+                if word in Variables.index2word_set:
+                    n_words += 1
+                    feature_vector = np.add(feature_vector, Variables.W2V_model[word])
+                if (n_words > 0):
+                    feature_vector = np.divide(feature_vector, n_words)
+
+            l1.append(feature_vector)
+        return l1
+        # here we will define the calculation of average word2vec for a sentence
+
+    # here we will define the calculation of average word2vec for a sentence
+    def average_word2vec_sentence1(sentence):
+        cleaned_words = FAQConversation.clean_text(sentence)
+        feature_vector = np.zeros((300,), dtype='float32')
+        n_words = 0
+        for word in cleaned_words:
+            if word in Variables.index2word_set:
+                n_words += 1
+                feature_vector = np.add(feature_vector, Variables.W2V_model[word])
+            if (n_words > 0):
+                feature_vector = np.divide(feature_vector, n_words)
+
+        return feature_vector
 
 
-if __name__ == "__main__":
-	print("in main of FBapp")
-	app.run(port=8000,debug=True, use_reloader=True)
+if __name__ == '__main__':
+    data = FAQConversation.read_csv('/home/manjunathh/chatbot/Faq.csv')
+    print("load word2vec")
+    Variables.W2V_model = FAQConversation.load_word2vec(
+        '/home/manjunathh/chatbot/GoogleNews-vectors-negative300.bin.gz')
+    print("word2vec loaded")
+    Variables.index2word_set = FAQConversation.convertVector_to_word(Variables.W2V_model)
+    FAQ_Word2Vec = FAQConversation.average_word2vec_sentence(data['Questions'])
+    while (True):
+        query = input()
+        print(query)
+        Query_Word2Vec = FAQConversation.average_word2vec_sentence1(query)
+
+
+

@@ -11,6 +11,7 @@ from sklearn.model_selection import train_test_split,GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import MultinomialNB
 import Variables
+from sklearn.ensemble import RandomForestClassifier
 
 class W2VIntentClassification:
     def load_faq_csv(file_name):
@@ -102,9 +103,16 @@ class W2VIntentClassification:
         accuracy=metrics.accuracy_score(y_test, predictions)
         return accuracy,model
 
-    def load_w2vmodel(self):
+    def Random_Forest(X_train_tvf, X_test_tvf, y_train, y_test):
+        model = RandomForestClassifier(n_estimators=10000, max_depth=100)
+        model.fit(X_train_tvf, y_train)
+        predictions = model.predict(X_test_tvf)
+        accuracy = metrics.accuracy_score(y_test, predictions)
+        return accuracy, model
 
-        data = W2VIntentClassification.load_faq_csv('/home/manjunathh/chatbot/UserQueries.csv')
+
+    def load_w2vmodel(self):
+        data = W2VIntentClassification.load_faq_csv('/home/manjunathh/chatbot/UserQueries_new.csv')
         print("load word2vec")
         Variables.W2V_model= W2VIntentClassification.load_word2vec('/home/manjunathh/chatbot/GoogleNews-vectors-negative300.bin.gz')
         print("word2vec loaded")
@@ -112,8 +120,7 @@ class W2VIntentClassification:
         X_train, X_test, y_train, y_test = W2VIntentClassification.split_data(data)
         X_train_w2c = W2VIntentClassification.average_word2vec_sentence(X_train, Variables.W2V_model, 300,Variables.index2word_set)
         X_test_w2c = W2VIntentClassification.average_word2vec_sentence(X_test, Variables.W2V_model, 300, Variables.index2word_set)
-        accuracy, model_LG = W2VIntentClassification.Logistic_Regression(X_train_w2c, X_test_w2c, y_train, y_test)
-        #accuracy, model_LG = W2VIntentClassification.XG_Boost(X_train_w2c, X_test_w2c, y_train, y_test)
+        accuracy, model_LG = W2VIntentClassification.Random_Forest(X_train_w2c, X_test_w2c, y_train, y_test)
         print("Accuracy of word2vecmodel:",accuracy*100)
         return model_LG
 
@@ -124,20 +131,20 @@ class W2VIntentClassification:
             Variables.model_LG=W2VIntentClassification.load_w2vmodel(1)
             query_w2c = W2VIntentClassification.average_word2vec_sentence1(text, Variables.W2V_model, 300,
                                                                            Variables.index2word_set)
-            label1 = Variables.model_LG.best_estimator_.predict([query_w2c])
-            label1_prob = Variables.model_LG.best_estimator_.predict_proba([query_w2c])
-            # label1 = Variables.model_LG.predict(query_w2c)
-            # label1_prob = Variables.model_LG.predict_proba(query_w2c)
+            # label1 = Variables.model_LG.best_estimator_.predict([query_w2c])
+            # label1_prob = Variables.model_LG.best_estimator_.predict_proba([query_w2c])
+            label1 = Variables.model_LG.predict([query_w2c])
+            label1_prob = Variables.model_LG.predict_proba([query_w2c])
 
             print("Label Prob:", label1_prob)
         else:
             print("In final else of W2VIntent")
             query_w2c =W2VIntentClassification.average_word2vec_sentence1(text,Variables.W2V_model,300,
                                                                           Variables.index2word_set)
-            label1 = Variables.model_LG.best_estimator_.predict([query_w2c])
-            label1_prob=Variables.model_LG.best_estimator_.predict_proba([query_w2c])
-            # label1 = Variables.model_LG.predict(query_w2c)
-            # label1_prob = Variables.model_LG.predict_proba(query_w2c)
+            # label1 = Variables.model_LG.best_estimator_.predict([query_w2c])
+            # label1_prob=Variables.model_LG.best_estimator_.predict_proba([query_w2c])
+            label1 = Variables.model_LG.predict([query_w2c])
+            label1_prob = Variables.model_LG.predict_proba([query_w2c])
 
             print("Label Prob:",label1_prob)
         return label1

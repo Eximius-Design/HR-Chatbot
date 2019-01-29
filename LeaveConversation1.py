@@ -61,9 +61,9 @@ class LeaveConversation1:
         Variables.From_date = None
         Variables.To_date = None
         Variables.Number_of_days = None
-        Variables.W2V_model = None
-        Variables.index2word_set = None
-        Variables.model_LG = None
+        # Variables.W2V_model = None
+        # Variables.index2word_set = None
+        # Variables.model_LG = None
 
     def check_entites(self):
         print(Variables.leave_type,Variables.From_date,Variables.To_date)
